@@ -10,8 +10,8 @@ dependencies:
   collection: ^1.17.0
   dart_webrtc:
     git:
-      url: "https://github.com/gutjei/flutter-webrtc.git"
-      ref: v1.5.3+hotfix.5-audio-capture.1
+      url: "https://github.com/gutjei/dart-webrtc.git"
+      ref: v1.5.3+hotfix.5-audio-capture.2
 #    path: "C:\\Users\\ya-ru\\IdeaProjects\\dart-webrtc"
   flutter:
     sdk: flutter
