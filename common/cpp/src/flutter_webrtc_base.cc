@@ -2,6 +2,24 @@
 
 #include "flutter_data_channel.h"
 #include "flutter_peerconnection.h"
+#include "flutter_media_stream.h"
+
+#if defined(_WIN32)
+#include "audio_capture/win/session-monitor.h"
+#include "audio_capture/win/audio-capture.h"
+#endif
+
+#if defined(__linux__)
+#include "audio_capture/linux/session-monitor.h"
+#include "audio_capture/linux/audio-capture.h"
+#endif
+
+#if defined(__APPLE__)
+#include "audio_capture/ios/session-monitor.h"
+#include "audio_capture/ios/audio-capture.h"
+#endif
+
+#include "flutter_audio_capture.h"
 
 #include "helper.h"
 
@@ -19,6 +37,28 @@ FlutterWebRTCBase::FlutterWebRTCBase(BinaryMessenger* messenger,
   video_device_ = factory_->GetVideoDevice();
   desktop_device_ = factory_->GetDesktopDevice();
   audio_processing_ = factory_->GetAudioProcessing();
+
+  auto custom_source_ = factory_->CreateAudioSource("custom_audio_source", RTCAudioSource::SourceType::kCustom);
+  custom_audio_track_ = factory_->CreateAudioTrack(custom_source_, "custom_audio");
+  custom_audio_track_->set_enabled(true);
+  local_tracks_[custom_audio_track_->id().std_string()] = custom_audio_track_;
+
+
+  auto muxer = new Muxer(custom_source_);
+  #if defined(_WIN32)
+  SessionMonitor::Create();
+  audio_capture_ = new AudioCapture(muxer);
+  #endif
+
+  #if defined(__linux__)
+  audio_capture_ = new AudioCapture(muxer);
+  #endif
+
+  #if defined(__APPLE__)
+  audio_capture_ = new AudioCapture(muxer);
+  #endif
+
+  audio_capture_->Update(new Settings{flutter_webrtc_plugin::MODE_SESSION_INCLUDE, {".*"}});
   event_channel_ = EventChannelProxy::Create(messenger_, task_runner_, kEventChannelName);
 }
 
