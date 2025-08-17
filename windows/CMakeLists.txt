@@ -6,6 +6,10 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
   cmake_policy(SET CMP0135 NEW)
 endif()
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Add the libwebrtc dependency
 include("${CMAKE_CURRENT_SOURCE_DIR}/../third_party/CMakeLists.txt")
 
@@ -17,6 +21,12 @@ add_definitions(-DLIB_WEBRTC_API_DLL)
 add_definitions(-DRTC_DESKTOP_DEVICE)
 
 add_library(${PLUGIN_NAME} SHARED
+  "../common/cpp/src/audio/win/audio-capture.cpp"
+  "../common/cpp/src/audio/win/audio-capture-helper.cpp"
+  "../common/cpp/src/audio/win/mixer.cpp"
+  "../common/cpp/src/audio/win/session-monitor.cpp"
+  "../common/cpp/src/audio/enums.cpp"
+  "../common/cpp/src/flutter_audio_capture.cc"
   "../common/cpp/src/flutter_common.cc"
   "../common/cpp/src/flutter_data_channel.cc"
   "../common/cpp/src/flutter_frame_cryptor.cc"
@@ -36,6 +46,7 @@ include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}/../common/cpp/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/svpng"
   "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/libwebrtc/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/wil/include"
 )
 
 apply_standard_settings(${PLUGIN_NAME})
@@ -46,11 +57,14 @@ target_include_directories(${PLUGIN_NAME} INTERFACE
   "${CMAKE_CURRENT_SOURCE_DIR}"
   "${CMAKE_CURRENT_SOURCE_DIR}/../common/cpp/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/libwebrtc/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/wil/include"
 )
 target_link_libraries(${PLUGIN_NAME} PRIVATE 
   flutter
   flutter_wrapper_plugin
   "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/libwebrtc/lib/win64/libwebrtc.dll.lib"
+  RuntimeObject
+  Mmdevapi.lib
 )
 
 # List of absolute paths to libraries that should be bundled with the plugin

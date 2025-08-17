@@ -24,6 +24,7 @@ class MediaStreamNative extends MediaStream {
       _audioTracks.add(MediaStreamTrackNative(track['id'], track['label'],
           track['kind'], track['enabled'], ownerTag, track['settings'] ?? {}));
     }
+    _audioTracks.add(MediaStreamTrackNative("custom_audio", "custom_audio", "audio", true, ownerTag, {} ));
 
     _videoTracks.clear();
     for (var track in videoTracks) {

@@ -306,6 +306,22 @@ void FlutterWebRTC::HandleMethodCall(
       return;
     }
     GetStats(track_id, pc, std::move(result));
+  } else if (method_call.method_name().compare("setAudioCaptureOptions") == 0) {
+    const EncodableMap params =
+        GetValue<EncodableMap>(*method_call.arguments());
+
+//        int pid = findInt(params, "pid");
+    const std::string modeStr = findString(params, "mode");
+	auto mode = str_to_mode(modeStr.c_str());
+
+	EncodableList patternList = findList(params, "pattern");
+    std::vector<std::string> pattern;
+    for (auto item : patternList) {
+      std::string id = GetValue<std::string>(item);
+      pattern.push_back(id.c_str());
+    }
+
+	audio_capture_->Update(new Settings{mode, pattern});
   } else if (method_call.method_name().compare("createDataChannel") == 0) {
     if (!method_call.arguments()) {
       result->Error("Bad Arguments", "Null constraints arguments received");

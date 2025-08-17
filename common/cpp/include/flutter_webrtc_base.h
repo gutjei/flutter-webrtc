@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef FLUTTER_WEBRTC_BASE_HXX
 #define FLUTTER_WEBRTC_BASE_HXX
 
@@ -21,6 +23,8 @@
 #include "rtc_peerconnection.h"
 #include "rtc_peerconnection_factory.h"
 #include "rtc_video_device.h"
+
+#include "audio_capture/audio.h"
 
 namespace flutter_webrtc_plugin {
 
@@ -104,6 +108,8 @@ class FlutterWebRTCBase {
 
  protected:
   scoped_refptr<RTCPeerConnectionFactory> factory_;
+  scoped_refptr<RTCAudioTrack> custom_audio_track_;
+  IAudioCapture* audio_capture_;
   scoped_refptr<RTCAudioDevice> audio_device_;
   scoped_refptr<RTCVideoDevice> video_device_;
   scoped_refptr<RTCDesktopDevice> desktop_device_;

@@ -8,12 +8,20 @@ environment:
 
 dependencies:
   collection: ^1.17.0
-  dart_webrtc: ^1.5.3+hotfix.3
+  dart_webrtc:
+    git:
+      url: "https://github.com/gutjei/flutter-webrtc.git"
+      ref: v1.5.3+hotfix.5-audio-capture.1
+#    path: "C:\\Users\\ya-ru\\IdeaProjects\\dart-webrtc"
   flutter:
     sdk: flutter
   path_provider: ^2.0.2
   web: ^1.0.0
-  webrtc_interface: ^1.2.2+hotfix.2
+  webrtc_interface:
+    git:
+      url: "https://github.com/gutjei/webrtc_interface.git"
+      ref: 1.3.0-audio-capture
+#    path: "C:\\Users\\ya-ru\\IdeaProjects\\webrtc-interface"
 
 dev_dependencies:
   flutter_test:

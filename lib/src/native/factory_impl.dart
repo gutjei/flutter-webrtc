@@ -51,6 +51,18 @@ class RTCFactoryNative extends RTCFactory {
   }
 
   @override
+  Future<void> setAudioCaptureOptions(AudioCaptureOptions opt) async{
+    final response = await WebRTC.invokeMethod(
+      'setAudioCaptureOptions',
+      <String, dynamic>{
+        'mode': typeAudioCaptureModeToString[opt.mode],
+        'pattern': opt.pattern,
+        'pid': opt.pid,
+      },
+    );
+  }
+
+  @override
   MediaRecorder mediaRecorder() {
     return MediaRecorderNative();
   }
@@ -95,6 +107,10 @@ Future<RTCPeerConnection> createPeerConnection(
     [Map<String, dynamic> constraints = const {}]) async {
   return RTCFactoryNative.instance
       .createPeerConnection(configuration, constraints);
+}
+
+Future<void> setAudioCaptureOptions(AudioCaptureOptions opt) async {
+  RTCFactoryNative.instance.setAudioCaptureOptions(opt);
 }
 
 Future<MediaStream> createLocalMediaStream(String label) async {
