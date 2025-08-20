@@ -13,6 +13,7 @@ namespace flutter_webrtc_plugin {
   struct Settings {
 	mode mode = MODE_SESSION_EXCLUDE;
 	std::vector<std::string> pattern;
+    int pid;
   };
 
   class IAudioCapture {

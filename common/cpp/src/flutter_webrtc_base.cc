@@ -58,7 +58,7 @@ FlutterWebRTCBase::FlutterWebRTCBase(BinaryMessenger* messenger,
   audio_capture_ = new AudioCapture(muxer);
   #endif
 
-  audio_capture_->Update(new Settings{flutter_webrtc_plugin::MODE_SESSION_INCLUDE, {".*"}});
+  audio_capture_->Update(new Settings{flutter_webrtc_plugin::MODE_SESSION_INCLUDE, {".*"}, 0});
   event_channel_ = EventChannelProxy::Create(messenger_, task_runner_, kEventChannelName);
 }
 

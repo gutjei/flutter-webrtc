@@ -55,45 +55,6 @@ static std::unordered_map<DWORD, DWORD> GetProcessParents(const std::set<DWORD> 
 	return parent_map;
 }
 
-std::set<DWORD>
-AudioCapture::DeDuplicateCaptureList(const std::set<DWORD> &pids,
-				     const std::set<DWORD> &exclude_pids = std::set<DWORD>())
-{
-	std::set<DWORD> all_pids = pids;
-	all_pids.insert(exclude_pids.begin(), exclude_pids.end());
-
-	auto parents = GetProcessParents(all_pids);
-
-	std::set<DWORD> uncaptured_pids = pids;
-	for (auto pid : exclude_pids)
-		uncaptured_pids.erase(parents[pid]);
-
-	std::set<DWORD> explicitly_captured_pids;
-	std::set<DWORD> implicitly_captured_pids;
-
-	while (!uncaptured_pids.empty()) {
-		for (auto pid : uncaptured_pids) {
-			if (uncaptured_pids.contains(parents[pid]))
-				continue;
-
-			explicitly_captured_pids.insert(pid);
-		}
-
-		for (auto pid : explicitly_captured_pids)
-			uncaptured_pids.erase(pid);
-
-		for (auto pid : uncaptured_pids) {
-			if (!explicitly_captured_pids.contains(parents[pid]))
-				continue;
-
-			implicitly_captured_pids.insert(pid);
-			uncaptured_pids.erase(pid);
-		}
-	}
-
-	return explicitly_captured_pids;
-}
-
 void AudioCapture::StartCapture(const std::set<DWORD> &new_pids)
 {
 	for (auto pid : pids) {
@@ -121,6 +82,33 @@ void AudioCapture::StopCapture()
 	pids.clear();
 }
 
+DWORD GetCurrentPID() {
+    return GetCurrentProcessId();
+}
+
+	std::set<DWORD> GetChildProcesses(DWORD parentPID) {
+    std::set<DWORD> children;
+
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapshot == INVALID_HANDLE_VALUE)
+        return children;
+
+    PROCESSENTRY32 pe;
+    pe.dwSize = sizeof(PROCESSENTRY32);
+
+    if (Process32First(hSnapshot, &pe)) {
+        do {
+            if (pe.th32ParentProcessID == parentPID) {
+                children.insert(pe.th32ProcessID);
+            }
+        } while (Process32Next(hSnapshot, &pe));
+    }
+
+    CloseHandle(hSnapshot);
+    return children;
+}
+
+
 void AudioCapture::WorkerUpdate()
 {
 	auto config_lock = config_section.lock();
@@ -128,15 +116,21 @@ void AudioCapture::WorkerUpdate()
 	config_lock.reset();
 
 	auto sessions = SessionMonitor::Instance()->GetSessions();
-
 	std::set<DWORD> capture_pids;
-	std::set<DWORD> exclude_pids;
+
+    DWORD current_pid = GetCurrentPID();
+    std::set<DWORD> current_pids = GetChildProcesses(current_pid);
+    current_pids.insert(current_pid);
 
 	for (auto &[key, executable] : sessions) {
-		// if (!config_.executables.contains(executable) ^ config_.exclude) {
-		// 	exclude_pids.insert(key.pid);
-		// 	continue;
-		// }
+        if (current_pids.contains(key.pid)) {
+        	continue;
+        }
+
+        if (config_.mode == MODE_SESSION_PID && key.pid == config_.pid) {
+        	capture_pids.insert(key.pid);
+        	continue;
+        }
 
 		if (config_.mode == MODE_SESSION_EXCLUDE) {
 			for (const auto& ps : config_.pattern) {
@@ -162,8 +156,7 @@ void AudioCapture::WorkerUpdate()
 		return;
 	}
 
-	StartCapture(AudioCapture::DeDuplicateCaptureList(
-		capture_pids,  exclude_pids));
+	StartCapture(capture_pids);
 }
 
 bool AudioCapture::Tick(const MSG &msg)
@@ -176,13 +169,11 @@ bool AudioCapture::Tick(const MSG &msg)
 		shutdown = true;
 
 		break;
-
 	case CaptureEvents::Update:
 	case CaptureEvents::SessionAdded:
 	case CaptureEvents::SessionExpired:
 		WorkerUpdate();
 		break;
-
 	default:
 		warn("unexpected event id, ignoring");
 		break;
@@ -221,10 +212,8 @@ void AudioCapture::Update(Settings *settings)
 	AudioCaptureConfig new_config = {
 		.mode = settings->mode,
 		.pattern = std::move(settings->pattern),
+      	.pid = static_cast<DWORD>(settings->pid),
 	};
-
-
-	// new_config.executables = GetExecutables(settings);
 
 	auto lock = config_section.lock();
 	config = std::move(new_config);
@@ -232,44 +221,6 @@ void AudioCapture::Update(Settings *settings)
 
 	PostThreadMessageA(worker_tid, CaptureEvents::Update, NULL, NULL);
 }
-
-//static void audio_capture_update(void *data, obs_data_t *settings)
-//{
-//	auto *ctx = static_cast<AudioCapture *>(data);
-//	ctx->Update(settings);
-//}
-
-bool AudioCapture::IsUwpWindow(HWND window)
-{
-	wchar_t name[256] = {L'\0'};
-
-	if (!GetClassNameW(window, name, sizeof(name) / sizeof(wchar_t)))
-		return false;
-
-	return wcscmp(name, L"ApplicationFrameWindow") == 0;
-}
-
-HWND AudioCapture::GetUwpActualWindow(HWND parent_window)
-{
-	DWORD parent_pid;
-	HWND child_window;
-
-	GetWindowThreadProcessId(parent_window, &parent_pid);
-	child_window = FindWindowEx(parent_window, NULL, NULL, NULL);
-
-	while (child_window != NULL) {
-		DWORD child_pid;
-		GetWindowThreadProcessId(child_window, &child_pid);
-
-		if (child_pid != parent_pid)
-			return child_window;
-
-		child_window = FindWindowEx(parent_window, child_window, NULL, NULL);
-	}
-
-	return NULL;
-}
-
 
 AudioCapture::AudioCapture(IRecorder *source) : source{source}{
 
@@ -293,12 +244,5 @@ AudioCapture::~AudioCapture(){
 	PostThreadMessageA(worker_tid, CaptureEvents::Shutdown, NULL, NULL);
 	worker_thread.join();
 }
-
-static void audio_capture_destroy(void *data)
-{
-	auto *ctx = static_cast<AudioCapture *>(data);
-	delete ctx;
-}
-
 
 };

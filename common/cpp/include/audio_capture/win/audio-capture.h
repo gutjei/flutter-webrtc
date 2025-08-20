@@ -26,6 +26,7 @@ struct AudioCaptureConfig {
 	std::set<std::string> executables;
 
 	std::vector<std::string> pattern;
+    DWORD pid;
 };
 
 class AudioCapture : public IAudioCapture {
@@ -51,25 +52,8 @@ private:
 
 	bool Tick(const MSG &msg);
 	void Run();
-
-	std::set<std::string> GetExecutables(Settings *settings);
 public:
-	static std::set<DWORD> DeDuplicateCaptureList(const std::set<DWORD> &pids,
-						      const std::set<DWORD> &exclude);
-
-
-	std::tuple<std::string, std::string>
-	MakeSessionOptionStrings(std::set<DWORD> pids, const std::string &executable, bool added);
-
-
 	void Update(Settings *settings);
-
-	bool IsUwpWindow(HWND window);
-	HWND GetUwpActualWindow(HWND parent_window);
-
-	void HotkeyStart();
-	void HotkeyStop();
-
 	explicit AudioCapture(IRecorder *source);
 	~AudioCapture();
 };

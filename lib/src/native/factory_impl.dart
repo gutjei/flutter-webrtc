@@ -110,7 +110,7 @@ Future<RTCPeerConnection> createPeerConnection(
 }
 
 Future<void> setAudioCaptureOptions(AudioCaptureOptions opt) async {
-  RTCFactoryNative.instance.setAudioCaptureOptions(opt);
+  return RTCFactoryNative.instance.setAudioCaptureOptions(opt);
 }
 
 Future<MediaStream> createLocalMediaStream(String label) async {
