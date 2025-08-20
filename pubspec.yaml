@@ -15,6 +15,7 @@ dependencies:
 #    path: "C:\\Users\\ya-ru\\IdeaProjects\\dart-webrtc"
   flutter:
     sdk: flutter
+  logger: ^2.0.2+1
   path_provider: ^2.0.2
   web: ^1.0.0
   webrtc_interface:
